@@ -1,0 +1,28 @@
+# Reference Julian Date
+2458313.500000000
+
+# Reference Orbital Elements (order: a, e, i, Omega, omega, M)
+1.580950380886370E+08
+3.442331092121583E-01
+2.515525231581124E+01
+2.362379805705986E+02
+2.555046145998171E+02
+1.404194574218586E+02
+
+# Target Julian Date
+2458317.500000000
+
+# Target R.A. (hrs, mins, secs)
+18 
+05 
+32.65 
+
+# Target Declination (hrs, mins, secs)
++35
+38
+47.7
+
+# Earth-Sun vector in equatorial coordinates (x, y, z)
+-6.448161129834115E+07 
+1.263286430036163E+08 
+5.476069328725145E+07
