@@ -83,3 +83,81 @@ def orbital_elements(r_vec, v_vec):
         M += 2*np.pi
 
     return np.array([a*AU, e, np.degrees(i), np.degrees(Omega), np.degrees(omega), np.degrees(M)])
+
+def ephemeris(a, e, i, Om, om, M, jd_ref, jd_target, sun_vec_eq):
+    a_AU = a / AU
+
+    # propagate mean anomaly to target date
+    n = GAUSSIAN_K / (a_AU**1.5)
+    M_target = M + np.degrees(n * (jd_target - jd_ref))
+
+    r_ecliptic = elements_to_position(a, e, i, Om, om, M_target)
+
+    # convert ecliptic coordinates to equatorial coordinates
+    epsilon = np.radians(23.43928)
+
+    Rx = np.array([[1, 0, 0],
+                   [0, np.cos(epsilon), -np.sin(epsilon)],
+                   [0, np.sin(epsilon), np.cos(epsilon)]])
+
+    r_equatorial = Rx @ r_ecliptic
+
+    sun_vec_eq = sun_vec_eq / AU
+    rho = sun_vec_eq + r_equatorial
+    rho_mag = np.linalg.norm(rho)
+
+    # RA
+    RA = np.arctan2(rho[1], rho[0])
+    if RA < 0:
+        RA += 2*np.pi
+
+    # Declination
+    Dec = np.arcsin(rho[2] / rho_mag)
+
+    return np.degrees(RA), np.degrees(Dec)
+
+def solve_kepler(M_deg, e, tol=1e-12):
+    # initial guess
+    M = np.radians(M_deg)
+    E = M
+
+    # newton-Raphson iteration
+    while True:
+        E_new = E - (E - e*np.sin(E) - M)/(1 - e*np.cos(E))
+
+        if abs(E_new - E) < tol:
+            break
+
+        E = E_new
+    
+    return E_new
+
+def elements_to_position(a_km, e, i_deg, Om_deg, om_deg, M):
+    
+    E = solve_kepler(M, e)
+
+    # conversions
+    a = a_km / AU
+    i = np.radians(i_deg)
+    Om = np.radians(Om_deg)
+    om = np.radians(om_deg)
+
+    # position in orbital plane
+    x_orbit = a * (np.cos(E) - e)
+    y_orbit = a * np.sqrt(1 - e**2) * np.sin(E)
+    r_orbit = np.array([x_orbit, y_orbit, 0])
+
+    # rotations
+    Rz_Om = np.array([[np.cos(Om), -np.sin(Om), 0],
+                      [np.sin(Om), np.cos(Om), 0],
+                      [0, 0, 1]])
+
+    Rx_i = np.array([[1, 0, 0],
+                    [0, np.cos(i), -np.sin(i)],
+                    [0, np.sin(i), np.cos(i)]])
+
+    Rz_om = np.array([[np.cos(om), -np.sin(om), 0],
+                      [np.sin(om), np.cos(om), 0],
+                      [0, 0, 1]])
+
+    return Rz_Om @ Rx_i @ Rz_om @ r_orbit

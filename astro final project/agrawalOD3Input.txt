@@ -12,12 +12,12 @@
 # Target Julian Date
 2458317.500000000
 
-# Target R.A. (hrs, mins, secs)
+# Target R.A. (hours (h), minutes (m), and seconds (s))
 18 
 05 
 32.65 
 
-# Target Declination (hrs, mins, secs)
+# Target Declination (degrees (°), arcminutes ('), and arcseconds (''))
 +35
 38
 47.7
