@@ -159,3 +159,18 @@ def elements_to_position(a_km, e, i_deg, Om_deg, om_deg, M):
                       [0, 0, 1]])
 
     return Rz_Om @ Rx_i @ Rz_om @ r_orbit
+
+def f_and_g(r_vec, v_vec, tau, order_four):
+    r = np.linalg.norm(r_vec)
+    u = 1 / r**3
+    z = np.dot(r_vec, v_vec) / r**2
+    q = np.dot(v_vec, v_vec) / r**2 - u
+
+    if order_four:
+        f = (1 - 0.5*u*tau**2 + 0.5*u*z*tau**3 + (1/24)*(3*u*q - 15*u*z**2 + u**2)*tau**4)
+        g = (tau - (1/6)*u*tau**3 + 0.25*u*z*tau**4)
+    else:
+        f = 1 - 0.5*u*tau**2 + 0.5*u*z*tau**3
+        g = tau - (1/6)*u*tau**3
+
+    return f, g
