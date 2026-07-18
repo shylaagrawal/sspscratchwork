@@ -31,10 +31,16 @@ def main():
     target_RA_degrees = odlib.hms_to_deg(data[8], data[9], data[10])
     target_dec_degrees = odlib.dms_to_deg(dec_positive, data[11], data[12], data[13])
 
+    RA_difference = abs(RA_pred - target_RA_degrees)
+    Dec_difference = abs(Dec_pred - target_dec_degrees)
+    RA_difference_arcsec = RA_difference * 3600
+    Dec_difference_arcsec = Dec_difference * 3600
+
     print("Predicted RA:", RA_pred)
     print("Expected RA:", target_RA_degrees)
+    print("RA difference:", RA_difference_arcsec, "arcsec")
     print()
     print("Predicted Dec:", Dec_pred)
     print("Expected Dec:", target_dec_degrees)
-
+    print("Dec difference:", Dec_difference_arcsec, "arcsec")
 

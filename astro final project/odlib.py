@@ -87,13 +87,12 @@ def orbital_elements(r_vec, v_vec):
 def ephemeris(a, e, i, Om, om, M, jd_ref, jd_target, sun_vec_eq):
     a_AU = a / AU
 
-    # propagate mean anomaly to target date
+    # mean anomaly to target date
     n = GAUSSIAN_K / (a_AU**1.5)
     M_target = M + np.degrees(n * (jd_target - jd_ref))
 
     r_ecliptic = elements_to_position(a, e, i, Om, om, M_target)
-
-    # convert ecliptic coordinates to equatorial coordinates
+    # ecliptic coordinates to equatorial coordinates
     epsilon = np.radians(23.43928)
 
     Rx = np.array([[1, 0, 0],
@@ -101,7 +100,6 @@ def ephemeris(a, e, i, Om, om, M, jd_ref, jd_target, sun_vec_eq):
                    [0, np.sin(epsilon), np.cos(epsilon)]])
 
     r_equatorial = Rx @ r_ecliptic
-
     sun_vec_eq = sun_vec_eq / AU
     rho = sun_vec_eq + r_equatorial
     rho_mag = np.linalg.norm(rho)
