@@ -12,4 +12,5 @@ def main():
     r_vec = data[0]
     v_vec = data[1]
     h = odlib.angular_momentum(r_vec, v_vec)
-    print(f"{h[0]:.6f}, {h[1]:.6f}, {h[2]:.6f}")
+    print(f"Calculated: {h[0]:.6f}, {h[1]:.6f}, {h[2]:.6f}")
+    print(f"Expected:   -0.341081, 0.228006, 0.873642")

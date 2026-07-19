@@ -9,12 +9,8 @@ AU = 149597870.7    # how many kilometers in one AU
 DAY = 86400         # how many seconds in one day
 GAUSSIAN_K = 0.0172020989484
 
-def km_per_sec_to_AU_per_Gday(r_vec, v_vec):
-    # conversions
-    r_vec = r_vec / AU
-    v_vec = v_vec * DAY / AU
-    v_vec /= GAUSSIAN_K
-    return r_vec, v_vec
+def AUday_to_AUGday(r_vec, v_vec):
+    return np.array(r_vec), np.array(v_vec) / GAUSSIAN_K
 
 def hms_to_deg(hours, minutes, seconds):
     # Converts an angle in (hours, minutes, seconds) to decimal degrees
@@ -30,12 +26,12 @@ def dms_to_deg(is_pos, degrees, minutes, seconds):
         return -res
 
 def angular_momentum(r_vec, v_vec):
-    r, v = km_per_sec_to_AU_per_Gday(r_vec, v_vec)
-    return np.cross(r, v)
+    r_vec, v_vec = AUday_to_AUGday(r_vec, v_vec)
+    return np.cross(r_vec, v_vec)
 
 def orbital_elements(r_vec, v_vec):
     h_vec = angular_momentum(r_vec, v_vec)
-    r_vec, v_vec = km_per_sec_to_AU_per_Gday(r_vec, v_vec)
+    r_vec, v_vec = AUday_to_AUGday(r_vec, v_vec)
     mu = 1.0
 
     # magnitudes
@@ -82,13 +78,12 @@ def orbital_elements(r_vec, v_vec):
     if M < 0:
         M += 2*np.pi
 
-    return np.array([a*AU, e, np.degrees(i), np.degrees(Omega), np.degrees(omega), np.degrees(M)])
+    return np.array([a, e, np.degrees(i), np.degrees(Omega), np.degrees(omega), np.degrees(M)])
 
 def ephemeris(a, e, i, Om, om, M, jd_ref, jd_target, sun_vec_eq):
-    a_AU = a / AU
 
     # mean anomaly to target date
-    n = GAUSSIAN_K / (a_AU**1.5)
+    n = GAUSSIAN_K / (a**1.5)
     M_target = M + np.degrees(n * (jd_target - jd_ref))
 
     r_ecliptic = elements_to_position(a, e, i, Om, om, M_target)
@@ -100,7 +95,6 @@ def ephemeris(a, e, i, Om, om, M, jd_ref, jd_target, sun_vec_eq):
                    [0, np.sin(epsilon), np.cos(epsilon)]])
 
     r_equatorial = Rx @ r_ecliptic
-    sun_vec_eq = sun_vec_eq / AU
     rho = sun_vec_eq + r_equatorial
     rho_mag = np.linalg.norm(rho)
 
@@ -130,12 +124,11 @@ def solve_kepler(M_deg, e, tol=1e-12):
     
     return E_new
 
-def elements_to_position(a_km, e, i_deg, Om_deg, om_deg, M):
+def elements_to_position(a, e, i_deg, Om_deg, om_deg, M):
     
     E = solve_kepler(M, e)
 
     # conversions
-    a = a_km / AU
     i = np.radians(i_deg)
     Om = np.radians(Om_deg)
     om = np.radians(om_deg)
@@ -169,8 +162,25 @@ def f_and_g(r_vec, v_vec, tau, order_four):
     if order_four:
         f = (1 - 0.5*u*tau**2 + 0.5*u*z*tau**3 + (1/24)*(3*u*q - 15*u*z**2 + u**2)*tau**4)
         g = (tau - (1/6)*u*tau**3 + 0.25*u*z*tau**4)
+
     else:
-        f = 1 - 0.5*u*tau**2 + 0.5*u*z*tau**3
-        g = tau - (1/6)*u*tau**3
+        f = (1 - 0.5*u*tau**2 + 0.5*u*z*tau**3)
+        g = (tau - (1/6)*u*tau**3)
 
     return f, g
+
+def radec_to_unit(ra_deg, dec_deg):
+    ra = np.radians(ra_deg)
+    dec = np.radians(dec_deg)
+
+    return np.array([np.cos(dec) * np.cos(ra), np.cos(dec) * np.sin(ra), np.sin(dec)])
+
+
+'''
+def km_per_sec_to_AU_per_Gday(r_vec, v_vec):
+    # conversions
+    r_vec = r_vec / AU
+    v_vec = v_vec * DAY / AU
+    v_vec /= GAUSSIAN_K
+    return r_vec, v_vec
+'''
