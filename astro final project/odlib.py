@@ -169,18 +169,182 @@ def f_and_g(r_vec, v_vec, tau, order_four):
 
     return f, g
 
-def radec_to_unit(ra_deg, dec_deg):
-    ra = np.radians(ra_deg)
-    dec = np.radians(dec_deg)
+def radec_to_decimal_to_rhohat(ra_str, dec_str):
+    # RA
+    h, m, s = map(float, ra_str.split())
+    ra = np.radians(hms_to_deg(h, m, s))
 
-    return np.array([np.cos(dec) * np.cos(ra), np.cos(dec) * np.sin(ra), np.sin(dec)])
+    # Dec
+    parts = dec_str.split()
+
+    if parts[0][0] == "-":
+        sign = -1
+        d = abs(float(parts[0]))
+    else:
+        sign = 1
+        d = float(parts[0])
+
+    m = float(parts[1])
+    s = float(parts[2])
+
+    dec = np.radians(sign * (d + m/60 + s/3600))
+
+    return np.array([
+        np.cos(ra)*np.cos(dec),
+        np.sin(ra)*np.cos(dec),
+        np.sin(dec)
+    ])
+
+def determinent(a, b, c):
+    return np.dot(np.cross(a, b), c)
+
+def equatorial_to_ecliptic(vector):
+    eps = np.radians(23.4374)
+
+    rotation = np.array([[1, 0, 0],
+                        [0, np.cos(eps), np.sin(eps)],
+                        [0, -np.sin(eps), np.cos(eps)]])
+
+    return rotation @ vector
+
+def gauss_method1(t1, t2, t3, ra1, dec1, ra2, dec2, ra3, dec3, R1, R2, R3, order_four=True, tolerance=1e-10, max_iter=100):
+    rhohat1 = radec_to_decimal_to_rhohat(ra1,dec1)
+    rhohat2 = radec_to_decimal_to_rhohat(ra2,dec2)
+    rhohat3 = radec_to_decimal_to_rhohat(ra3,dec3)
+
+    tau1 = GAUSSIAN_K*(t1-t2)
+    tau0 = GAUSSIAN_K*(t3-t1)
+    tau3 = GAUSSIAN_K*(t3-t2)
+    a1 = tau3/tau0
+    a3 = -tau1/tau0
+
+    rho1 = (a1 * determinent(R1, rhohat2, rhohat3) - determinent(R2, rhohat2, rhohat3) + a3 * determinent(R3, rhohat2, rhohat3)) / (a1 * determinent(rhohat1, rhohat2, rhohat3))
+    rho2 = (a1 * determinent(rhohat1, R1, rhohat3) - determinent(rhohat1, R2, rhohat3) + a3 * determinent(rhohat1, R3, rhohat3)) / (-1 * determinent(rhohat1, rhohat2, rhohat3))
+    rho3 = (a1 * determinent(rhohat2, R1, rhohat1) - determinent(rhohat2, R2, rhohat1) + a3 * determinent(rhohat2, R3, rhohat1)) / (a3 * determinent(rhohat2, rhohat3, rhohat1))
+
+    r1_init = rho1 * rhohat1 - R1
+    r2_init = rho2 * rhohat2 - R2
+    r3_init = rho3 * rhohat3 - R3
+
+    v12 = (r2_init - r1_init) / (t2 - t1)
+    v23 = (r3_init - r2_init) / (t3 - t2)
+
+    v2_init = ((t3-t2) * v12 + (t2-t1) * v23) / (t3-t1) / GAUSSIAN_K
+
+    f1, g1 = f_and_g(r2_init, v2_init, tau1, order_four)
+    f3, g3 = f_and_g(r2_init, v2_init, tau3, order_four)
+
+    a1 = g3 / (f1 * g3 - f3 * g1)
+    a3 = -g1 / (f1 * g3 - f3 * g1)
+
+    r2_prev = r2_init
+
+    for iteration in range(max_iter):
+        d1 = determinent(rhohat1, rhohat2, rhohat3)
+        d2 = determinent(rhohat2, rhohat3, rhohat1)
+
+        rho1 = (a1 * determinent(R1, rhohat2, rhohat3) - determinent(R2, rhohat2, rhohat3) + a3 * determinent(R3, rhohat2, rhohat3)) / (a1 * d1)
+        rho2 = (a1 * determinent(rhohat1, R1, rhohat3) - determinent(rhohat1, R2, rhohat3) + a3 * determinent(rhohat1, R3, rhohat3)) / (-1 * d1)
+        rho3 = (a1 * determinent(rhohat2, R1, rhohat1) - determinent(rhohat2, R2, rhohat1) + a3 * determinent(rhohat2, R3, rhohat1)) / (a3 * d2)
+
+        r1 = rho1 * rhohat1 - R1
+        r2 = rho2 * rhohat2 - R2
+        r3 = rho3 * rhohat3 - R3
+
+        denom = f1 * g3 - f3 * g1
+        r2_refined = (g3 * r1 - g1 * r3) / denom
+        v2_refined = (f3 * r1 - f1 * r3) / (f3 * g1 - f1 * g3)
+
+        f1, g1 = f_and_g(r2_refined, v2_refined, tau1, order_four)
+        f3, g3 = f_and_g(r2_refined, v2_refined, tau3, order_four)
+
+        a1 = g3 / (f1 * g3 - f3 * g1)
+        a3 = -g1 / (f1 * g3 - f3 * g1)
+
+        mag_r2 = np.linalg.norm(r2_refined)
+        diff = np.linalg.norm(r2_refined - r2_prev) / mag_r2
+
+        if diff < tolerance:
+            break
+
+        r2_prev = r2_refined
+
+    return r2_refined, v2_refined
 
 
-'''
-def km_per_sec_to_AU_per_Gday(r_vec, v_vec):
-    # conversions
-    r_vec = r_vec / AU
-    v_vec = v_vec * DAY / AU
-    v_vec /= GAUSSIAN_K
-    return r_vec, v_vec
-'''
+
+def gauss_method(t1, t2, t3, ra1, dec1, ra2, dec2, ra3, dec3, R1, R2, R3, order_four=True, tolerance=1e-10, max_iter=100):
+    c_au = 173.144643267
+
+    rhohat1 = radec_to_decimal_to_rhohat(ra1, dec1)
+    rhohat2 = radec_to_decimal_to_rhohat(ra2, dec2)
+    rhohat3 = radec_to_decimal_to_rhohat(ra3, dec3)
+
+    tau1 = GAUSSIAN_K * (t1 - t2)
+    tau0 = GAUSSIAN_K * (t3 - t1)
+    tau3 = GAUSSIAN_K * (t3 - t2)
+    a1 = tau3 / tau0
+    a3 = -tau1 / tau0
+
+    rho1 = (a1 * determinent(R1, rhohat2, rhohat3) - determinent(R2, rhohat2, rhohat3) + a3 * determinent(R3, rhohat2, rhohat3)) / (a1 * determinent(rhohat1, rhohat2, rhohat3))
+    rho2 = (a1 * determinent(rhohat1, R1, rhohat3) - determinent(rhohat1, R2, rhohat3) + a3 * determinent(rhohat1, R3, rhohat3)) / (-1 * determinent(rhohat1, rhohat2, rhohat3))
+    rho3 = (a1 * determinent(rhohat2, R1, rhohat1) - determinent(rhohat2, R2, rhohat1) + a3 * determinent(rhohat2, R3, rhohat1)) / (a3 * determinent(rhohat2, rhohat3, rhohat1))
+
+    r1_init = rho1 * rhohat1 - R1
+    r2_init = rho2 * rhohat2 - R2
+    r3_init = rho3 * rhohat3 - R3
+
+    v12 = (r2_init - r1_init) / (t2 - t1)
+    v23 = (r3_init - r2_init) / (t3 - t2)
+
+    v2_init = ((t3 - t2) * v12 + (t2 - t1) * v23) / (t3 - t1) / GAUSSIAN_K
+
+    f1, g1 = f_and_g(r2_init, v2_init, tau1, order_four)
+    f3, g3 = f_and_g(r2_init, v2_init, tau3, order_four)
+
+    a1 = g3 / (f1 * g3 - f3 * g1)
+    a3 = -g1 / (f1 * g3 - f3 * g1)
+
+    r2_prev = r2_init
+
+    for _ in range(max_iter):
+        t1_corr = t1 - (rho1 / c_au)
+        t2_corr = t2 - (rho2 / c_au)
+        t3_corr = t3 - (rho3 / c_au)
+
+        tau1 = GAUSSIAN_K * (t1_corr - t2_corr)
+        tau3 = GAUSSIAN_K * (t3_corr - t2_corr)
+
+        d1 = determinent(rhohat1, rhohat2, rhohat3)
+        d2 = determinent(rhohat2, rhohat3, rhohat1)
+
+        rho1 = (a1 * determinent(R1, rhohat2, rhohat3) - determinent(R2, rhohat2, rhohat3) + a3 * determinent(R3, rhohat2, rhohat3)) / (a1 * d1)
+        rho2 = (a1 * determinent(rhohat1, R1, rhohat3) - determinent(rhohat1, R2, rhohat3) + a3 * determinent(rhohat1, R3, rhohat3)) / (-1 * d1)
+        rho3 = (a1 * determinent(rhohat2, R1, rhohat1) - determinent(rhohat2, R2, rhohat1) + a3 * determinent(rhohat2, R3, rhohat1)) / (a3 * d2)
+
+        r1 = rho1 * rhohat1 - R1
+        r2 = rho2 * rhohat2 - R2
+        r3 = rho3 * rhohat3 - R3
+
+        denom = f1 * g3 - f3 * g1
+        r2_refined = (g3 * r1 - g1 * r3) / denom
+        v2_refined = (f3 * r1 - f1 * r3) / (f3 * g1 - f1 * g3)
+
+        f1, g1 = f_and_g(r2_refined, v2_refined, tau1, order_four)
+        f3, g3 = f_and_g(r2_refined, v2_refined, tau3, order_four)
+        a1 = g3 / (f1 * g3 - f3 * g1)
+        a3 = -g1 / (f1 * g3 - f3 * g1)
+
+        mag_r2 = np.linalg.norm(r2_refined)
+        diff = np.linalg.norm(r2_refined - r2_prev) / mag_r2
+
+        if diff < tolerance:
+            break
+
+        r2_prev = r2_refined
+
+    r2_ecliptic = equatorial_to_ecliptic(r2_refined)
+    v2_ecliptic = equatorial_to_ecliptic(v2_refined)
+
+    return r2_ecliptic, v2_ecliptic
+
