@@ -21,15 +21,18 @@ def main():
         t2 = row["t2_jd"]
         t3 = row["t3_jd"]
         ra1 = row["ra1"]
-        dec1 = row["dec1"]
+        dec1 = row["01-Dec"]
         ra2 = row["ra2"]
-        dec2 = row["dec2"]
+        dec2 = row["02-Dec"]
         ra3 = row["ra3"]
-        dec3 = row["dec3"]
+        dec3 = row["03-Dec"]
 
         R1 = np.array([row["sun_x_1"], row["sun_y_1"], row["sun_z_1"]])
         R2 = np.array([row["sun_x_2"], row["sun_y_2"], row["sun_z_2"]])
         R3 = np.array([row["sun_x_3"], row["sun_y_3"], row["sun_z_3"]])
+        R1 = odlib.ecliptic_to_equatorial(R1)
+        R2 = odlib.ecliptic_to_equatorial(R2)
+        R3 = odlib.ecliptic_to_equatorial(R3)
 
         r2, v2 = odlib.gauss_method(
             t1, t2, t3,
@@ -50,15 +53,14 @@ def main():
         print("\nVelocity Vector (AU/day)")
         print(v2)
 
-        print("\nOrbital Elements")
-        print("a: ", a)        
-        print("e: ", e)
-        print("i: ", i)
-        print("Omega: ", Omega)
-        print("omega: ", omega)
-        print("M: ", M)
+        jpl_r2 = np.array([float(row["jpl_r2_x"]), float(row["jpl_r2_y"]), float(row["jpl_r2_z"])])
+        jpl_v2 = np.array([ row["jpl_v2_x"], row["jpl_v2_y"],row["jpl_v2_z"]])
 
-        print("\nJPL Comparison")
+        print("\nVector Error")
+        print("Position error:", np.linalg.norm(r2 - jpl_r2), "AU")
+        print("Velocity error:", np.linalg.norm(v2 - jpl_v2), "AU/day")
+
+        print("\n Orbital Elements Compared to JPL")
         jpl_a = row["jpl_a"]
         jpl_e = row["jpl_e"]
         jpl_i = row["jpl_i"]
@@ -66,17 +68,15 @@ def main():
         jpl_omega = row["jpl_aop"]
         jpl_M = row["jpl_ma"]
 
-        print("a: ", a, " | JPL: ", jpl_a, " | Difference: ", abs((a-jpl_a)/jpl_a)*100, "%")
-        print("e: ", e, " | JPL: ", jpl_e, " | Difference: ", abs((e-jpl_e)/jpl_e)*100, "%")
-        print("i: ", i, " | JPL: ", jpl_i, " | Difference: ", abs((i-jpl_i)/jpl_i)*100, "%")
+        print("a: ", a, "     | JPL: ", jpl_a, " | Difference: ", abs((a-jpl_a)/jpl_a)*100, "%")
+        print("e: ", e, "    | JPL: ", jpl_e, " | Difference: ", abs((e-jpl_e)/jpl_e)*100, "%")
+        print("i: ", i, "      | JPL: ", jpl_i, " | Difference: ", abs((i-jpl_i)/jpl_i)*100, "%")
         print("Omega: ", Omega, " | JPL: ", jpl_Omega, " | Difference: ", abs((Omega-jpl_Omega)/jpl_Omega)*100, "%")
         print("omega: ", omega, " | JPL: ", jpl_omega, " | Difference: ", abs((omega-jpl_omega)/jpl_omega)*100, "%")
-        print("M: ", M, " | JPL: ", jpl_M, " | Difference: ", abs((M-jpl_M)/jpl_M)*100, "%")
+        print("M: ", M, "     | JPL: ", jpl_M, " | Difference: ", abs((M-jpl_M)/jpl_M)*100, "%")
+        print("---------------------------------------------------------------------------------------------")
 
-        jpl_r2 = np.array([row["jpl_r2_x"], row["jpl_r2_y"], row["jpl_r2_z"]])
-        jpl_v2 = np.array([ row["jpl_v2_x"], row["jpl_v2_y"],row["jpl_v2_z"]])
+        
 
-        print("\nVector Error")
-        print("Position error:", np.linalg.norm(r2 - jpl_r2), "AU")
-        print("Velocity error:", np.linalg.norm(v2 - jpl_v2), "AU/day")
+        
     
