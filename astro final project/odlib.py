@@ -1,4 +1,5 @@
 # Shyla Agrawal
+# 7/7 - 7/21
 # Orbit Determination Library
 
 import numpy as np
@@ -8,6 +9,8 @@ AU = 149597870.7     # kilometers in one AU
 DAY = 86400          # seconds in one day
 GAUSSIAN_K = 0.0172020989484
 C_AU = 173.14463267  # Speed of light in AU/day
+
+# helper functions
 
 def AUday_to_AUGday(r_vec, v_vec):
     return np.array(r_vec), np.array(v_vec) / GAUSSIAN_K
@@ -33,6 +36,36 @@ def ecliptic_to_equatorial(vector):
     ])
     
     return rotation @ vector
+
+def equatorial_to_ecliptic(vector):
+    eps = np.radians(23.4374)
+    rotation = np.array([
+        [1.0, 0.0, 0.0],
+        [0.0, np.cos(eps), np.sin(eps)],
+        [0.0, -np.sin(eps), np.cos(eps)]
+    ])
+    return rotation @ vector
+
+def radec_to_decimal_to_rhohat(ra_str, dec_str):
+    h, m, s = map(float, str(ra_str).strip().split())
+    ra = np.radians(hms_to_deg(h, m, s))
+
+    dec_str = str(dec_str).strip()
+    sign = -1.0 if dec_str.startswith('-') else 1.0
+    parts = dec_str.lstrip('+-').split()
+    d, m, s = map(float, parts)
+    dec = np.radians(sign * (d + m / 60.0 + s / 3600.0))
+
+    return np.array([
+        np.cos(ra) * np.cos(dec),
+        np.sin(ra) * np.cos(dec),
+        np.sin(dec)
+    ])
+
+def determinent(a, b, c):
+    return np.dot(np.cross(a, b), c)
+
+# main methods
 
 def orbital_elements(r_vec, v_vec):
     h_vec = angular_momentum(r_vec, v_vec)
@@ -93,25 +126,6 @@ def f_and_g(r_vec, v_vec, tau, order_four):
         g = (tau - (1.0/6.0)*u*tau**3)
 
     return f, g
-
-def radec_to_decimal_to_rhohat(ra_str, dec_str):
-    h, m, s = map(float, str(ra_str).strip().split())
-    ra = np.radians(hms_to_deg(h, m, s))
-
-    dec_str = str(dec_str).strip()
-    sign = -1.0 if dec_str.startswith('-') else 1.0
-    parts = dec_str.lstrip('+-').split()
-    d, m, s = map(float, parts)
-    dec = np.radians(sign * (d + m / 60.0 + s / 3600.0))
-
-    return np.array([
-        np.cos(ra) * np.cos(dec),
-        np.sin(ra) * np.cos(dec),
-        np.sin(dec)
-    ])
-
-def determinent(a, b, c):
-    return np.dot(np.cross(a, b), c)
 
 def solve_rhos(a1, a3, rhohat1, rhohat2, rhohat3, R1, R2, R3):
     num1 = a1 * determinent(R1, rhohat2, rhohat3) - determinent(R2, rhohat2, rhohat3) + a3 * determinent(R3, rhohat2, rhohat3)
@@ -189,3 +203,8 @@ def gauss_method(t1, t2, t3, ra1, dec1, ra2, dec2, ra3, dec3, R1, R2, R3, order_
 
     v2_refined_au = v2_refined * GAUSSIAN_K
     return r2_refined, v2_refined_au
+
+def propagate_M(M_deg, a, t2, target_jd):
+    n_rad = GAUSSIAN_K / (a ** 1.5)
+    dt = target_jd - t2
+    return (M_deg + np.degrees(n_rad * dt)) % 360.0

@@ -45,13 +45,11 @@ def main():
         )
         
         # Orbital elements
+        r2 = odlib.equatorial_to_ecliptic(r2)
+        v2 = odlib.equatorial_to_ecliptic(v2)
+
         a, e, i, Omega, omega, M = odlib.orbital_elements(r2, v2)
-
-        print("\nPosition Vector (AU)")
-        print(r2)
-
-        print("\nVelocity Vector (AU/day)")
-        print(v2)
+        M = odlib.propagate_M(M, a, t2, row["t_target_jd"])
 
         jpl_r2 = np.array([float(row["jpl_r2_x"]), float(row["jpl_r2_y"]), float(row["jpl_r2_z"])])
         jpl_v2 = np.array([ row["jpl_v2_x"], row["jpl_v2_y"],row["jpl_v2_z"]])
@@ -60,7 +58,7 @@ def main():
         print("Position error:", np.linalg.norm(r2 - jpl_r2), "AU")
         print("Velocity error:", np.linalg.norm(v2 - jpl_v2), "AU/day")
 
-        print("\n Orbital Elements Compared to JPL")
+        print("\nOrbital Element Error")
         jpl_a = row["jpl_a"]
         jpl_e = row["jpl_e"]
         jpl_i = row["jpl_i"]
@@ -68,12 +66,12 @@ def main():
         jpl_omega = row["jpl_aop"]
         jpl_M = row["jpl_ma"]
 
-        print("a: ", a, "     | JPL: ", jpl_a, " | Difference: ", abs((a-jpl_a)/jpl_a)*100, "%")
-        print("e: ", e, "    | JPL: ", jpl_e, " | Difference: ", abs((e-jpl_e)/jpl_e)*100, "%")
+        print("a: ", a, "       | JPL: ", jpl_a, " | Difference: ", abs((a-jpl_a)/jpl_a)*100, "%")
+        print("e: ", e, "      | JPL: ", jpl_e, " | Difference: ", abs((e-jpl_e)/jpl_e)*100, "%")
         print("i: ", i, "      | JPL: ", jpl_i, " | Difference: ", abs((i-jpl_i)/jpl_i)*100, "%")
-        print("Omega: ", Omega, " | JPL: ", jpl_Omega, " | Difference: ", abs((Omega-jpl_Omega)/jpl_Omega)*100, "%")
-        print("omega: ", omega, " | JPL: ", jpl_omega, " | Difference: ", abs((omega-jpl_omega)/jpl_omega)*100, "%")
-        print("M: ", M, "     | JPL: ", jpl_M, " | Difference: ", abs((M-jpl_M)/jpl_M)*100, "%")
+        print("Omega: ", Omega, "   | JPL: ", jpl_Omega, " | Difference: ", abs((Omega-jpl_Omega)/jpl_Omega)*100, "%")
+        print("omega: ", omega, "  | JPL: ", jpl_omega, " | Difference: ", abs((omega-jpl_omega)/jpl_omega)*100, "%")
+        print("M: ", M, "      | JPL: ", jpl_M, " | Difference: ", abs((M-jpl_M)/jpl_M)*100, "%")
         print("---------------------------------------------------------------------------------------------")
 
         
