@@ -112,7 +112,6 @@ def orbital_elements(r_vec, v_vec):
 
     return np.array([a, e, np.degrees(i), np.degrees(Omega), np.degrees(omega), np.degrees(M)])
 
-
 def ephemeris(a, e, i, Om, om, M, jd_ref, jd_target, sun_vec_eq):
     a_AU = a / AU
 

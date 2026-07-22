@@ -21,11 +21,11 @@ def main():
         t2 = row["t2_jd"]
         t3 = row["t3_jd"]
         ra1 = row["ra1"]
-        dec1 = row["01-Dec"]
+        dec1 = row["dec1"]
         ra2 = row["ra2"]
-        dec2 = row["02-Dec"]
+        dec2 = row["dec2"]
         ra3 = row["ra3"]
-        dec3 = row["03-Dec"]
+        dec3 = row["dec3"]
 
         R1 = np.array([row["sun_x_1"], row["sun_y_1"], row["sun_z_1"]])
         R2 = np.array([row["sun_x_2"], row["sun_y_2"], row["sun_z_2"]])
@@ -57,6 +57,8 @@ def main():
         print("\nVector Error")
         print("Position error:", np.linalg.norm(r2 - jpl_r2), "AU")
         print("Velocity error:", np.linalg.norm(v2 - jpl_v2), "AU/day")
+        print("Position error:", np.linalg.norm((r2 - jpl_r2 )/ jpl_r2) * 100, "%")
+        print("Velocity error:", np.linalg.norm((v2 - jpl_v2 )/ jpl_v2) * 100, "%")
 
         print("\nOrbital Element Error")
         jpl_a = row["jpl_a"]
