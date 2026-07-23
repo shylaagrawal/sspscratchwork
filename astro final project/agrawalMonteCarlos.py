@@ -62,33 +62,30 @@ def main():
         ra3_new_deg = ra3_deg + noise_ra3
         dec3_new_deg = dec3_deg + noise_dec3
 
-        try:
-            ra1_new, dec1_new = odlib.decimal_to_radec(ra1_new_deg, dec1_new_deg)
-            ra2_new, dec2_new = odlib.decimal_to_radec(ra2_new_deg, dec2_new_deg)
-            ra3_new, dec3_new = odlib.decimal_to_radec(ra3_new_deg, dec3_new_deg)
+        ra1_new, dec1_new = odlib.decimal_to_radec(ra1_new_deg, dec1_new_deg)
+        ra2_new, dec2_new = odlib.decimal_to_radec(ra2_new_deg, dec2_new_deg)
+        ra3_new, dec3_new = odlib.decimal_to_radec(ra3_new_deg, dec3_new_deg)
 
-            r2, v2 = odlib.gauss_method(
-                t1, t2, t3,
-                ra1_new, dec1_new,
-                ra2_new, dec2_new,
-                ra3_new, dec3_new,
-                R1, R2, R3
-            )
+        r2, v2 = odlib.gauss_method(
+            t1, t2, t3,
+            ra1_new, dec1_new,
+            ra2_new, dec2_new,
+            ra3_new, dec3_new,
+            R1, R2, R3
+        )
 
-            r2 = odlib.equatorial_to_ecliptic(r2)
-            v2 = odlib.equatorial_to_ecliptic(v2)
+        r2 = odlib.equatorial_to_ecliptic(r2)
+        v2 = odlib.equatorial_to_ecliptic(v2)
 
-            a_val, e_val, i_val, Om_val, om_val, M_val = odlib.orbital_elements(r2, v2)
+        a_val, e_val, i_val, Om_val, om_val, M_val = odlib.orbital_elements(r2, v2)
 
-            a.append(a_val)
-            e.append(e_val)
-            i.append(i_val)
-            Om.append(Om_val)
-            om.append(om_val)
-            M.append(M_val)
+        a.append(a_val)
+        e.append(e_val)
+        i.append(i_val)
+        Om.append(Om_val)
+        om.append(om_val)
+        M.append(M_val)
 
-        except Exception:
-            pass
 
         # seed += 1
         seed += 1
