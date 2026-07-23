@@ -40,7 +40,7 @@ def main():
     R3 = odlib.ecliptic_to_equatorial(R3)
 
     seed = 1982
-    N_samples = 7000
+    N_samples = 10000
     a, e, i, Om, om, M = [], [], [], [], [], []
 
     for _ in range(N_samples):
@@ -101,34 +101,50 @@ def main():
     print(f"M (deg)     : {np.mean(M):12.6f} +/- {np.std(M, ddof=1):10.6f}")
     print("----------------------------------------")
 
+    units = ["AU", "", "deg", "deg", "deg", "deg"]
     labels = ["a (AU)", "e", "i (deg)", "Omega (deg)", "omega (deg)", "M (deg)"]
     param_data = [a, e, i, Om, om, M]
     num_params = len(labels)
+    num_params = len(labels)
+    fig = plt.figure(figsize=(10, 10))
+    gs = gridspec.GridSpec(num_params, num_params, figure=fig, hspace=0.08, wspace=0.08)
 
-    fig = plt.figure(figsize=(12, 12))
-    gs = gridspec.GridSpec(num_params, num_params, figure=fig)
+    means = [np.mean(p) for p in param_data]
+    stds = [np.std(p, ddof=1) for p in param_data]
 
     for row in range(num_params):
         for col in range(num_params):
             if col > row:
                 continue
-
             ax = fig.add_subplot(gs[row, col])
 
             if row == col:
-                ax.hist(param_data[row], bins=30, color="skyblue", edgecolor="black")
+                ax.hist(param_data[row], bins=30, color="#4C72B0",
+                         edgecolor="white", linewidth=0.5, alpha=0.9)
+                ax.axvline(means[row], color="black", linestyle="--", linewidth=1)
             else:
-                ax.scatter(param_data[col], param_data[row], s=2, alpha=0.5, color="navy")
+                ax.scatter(param_data[col], param_data[row], s=3, alpha=0.35,
+                           color="#4C72B0", edgecolors="none", rasterized=True)
+                ax.axvline(means[col], color="black", linestyle="--", linewidth=0.6, alpha=0.6)
+                ax.axhline(means[row], color="black", linestyle="--", linewidth=0.6, alpha=0.6)
+
+            ax.tick_params(labelsize=7)
+            for spine in ax.spines.values():
+                spine.set_linewidth(0.6)
 
             if row == num_params - 1:
-                ax.set_xlabel(labels[col])
+                ax.set_xlabel(f"{labels[col]}\n[{units[col]}]", fontsize=9)
             else:
                 ax.set_xticklabels([])
 
             if col == 0 and row != 0:
-                ax.set_ylabel(labels[row])
+                ax.set_ylabel(f"{labels[row]}\n[{units[row]}]", fontsize=9)
             elif row != col:
                 ax.set_yticklabels([])
+            if row == col:
+                ax.set_yticklabels([])
 
-    plt.tight_layout()
+    fig.suptitle("Monte Carlo Distribution of Orbital Elements\n"
+                  f"(N = {len(param_data[0])} trials)", fontsize=12, y=0.98)
+
     plt.show()
