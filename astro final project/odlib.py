@@ -3,6 +3,8 @@
 # Orbit Determination Library
 
 import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
 
 # constants
 AU = 149597870.7     # kilometers in one AU
@@ -61,6 +63,39 @@ def radec_to_decimal_to_rhohat(ra_str, dec_str):
         np.sin(ra) * np.cos(dec),
         np.sin(dec)
     ])
+
+def radec_to_decimal(ra_str, dec_str):
+    h, m, s = map(float, str(ra_str).strip().split())
+    ra = np.radians(hms_to_deg(h, m, s))
+
+    dec_str = str(dec_str).strip()
+    sign = -1.0 if dec_str.startswith('-') else 1.0
+    parts = dec_str.lstrip('+-').split()
+    d, m, s = map(float, parts)
+    dec = np.radians(sign * (d + m / 60.0 + s / 3600.0))
+
+    return ra, dec
+
+def decimal_to_radec(ra_deg, dec_deg):
+    # Ensure RA is positive in [0, 360)
+    ra_deg = ra_deg % 360.0
+    
+    # Convert RA degrees to hours, minutes, seconds
+    ra_hours_tot = ra_deg / 15.0
+    h = int(ra_hours_tot)
+    m = int((ra_hours_tot - h) * 60.0)
+    s = ((ra_hours_tot - h) * 60.0 - m) * 60.0
+    ra_str = f"{h:02d} {m:02d} {s:06.3f}"
+    
+    # Determine sign and convert Dec degrees to degrees, minutes, seconds
+    sign = "-" if dec_deg < 0 else "+"
+    abs_dec = abs(dec_deg)
+    d = int(abs_dec)
+    dm = int((abs_dec - d) * 60.0)
+    ds = ((abs_dec - d) * 60.0 - dm) * 60.0
+    dec_str = f"{sign}{d:02d} {dm:02d} {ds:05.2f}"
+    
+    return ra_str, dec_str
 
 def determinent(a, b, c):
     return np.dot(np.cross(a, b), c)
@@ -281,7 +316,56 @@ def gauss_method(t1, t2, t3, ra1, dec1, ra2, dec2, ra3, dec3, R1, R2, R3, order_
     v2_refined_au = v2_refined * GAUSSIAN_K
     return r2_refined, v2_refined_au
 
-def propagate_M(M_deg, a, t2, target_jd):
-    n_rad = GAUSSIAN_K / (a ** 1.5)
-    dt = target_jd - t2
-    return (M_deg + np.degrees(n_rad * dt)) % 360.0
+def compute_coefficients(filename):
+    star_positions = pd.read_csv(filename)
+
+    # column vectors
+    x = star_positions["x_pix"]
+    y = star_positions["y_pix"]
+    ra = star_positions["ra_deg"]
+    dec = star_positions["dec_deg"]
+
+    # compute the xy matrix
+    N = len(star_positions)
+    xy_matrix = np.array([
+        [N, np.sum(x), np.sum(y)],
+        [np.sum(x), np.sum(x**2), np.sum(x*y)],
+        [np.sum(y), np.sum(x*y), np.sum(y**2)]
+    ])
+
+    # compute LHS vector for RA and Dec
+    lhs_ra = np.array([np.sum(ra), np.sum(x * ra), np.sum(y * ra)])
+    lhs_dec = np.array([np.sum(dec), np.sum(x * dec), np.sum(y * dec)])
+
+    # compute the plate solution coefficients 
+    b1, a11, a12 = np.linalg.solve(xy_matrix, lhs_ra)
+    b2, a21, a22 = np.linalg.solve(xy_matrix, lhs_dec)
+
+    return b1, a11, a12, b2, a21, a22
+
+def xy_to_radec(x_pix, y_pix, b1, a11, a12, b2, a21, a22):
+    # Converts a location in an image (x_pix, y_pix) to an RA and DEC coordinate in degrees
+    # Uses the 6 plate solve coefficients to do so
+    
+    return (b1 + a11 * x_pix + a12 * y_pix, b2 + a21 * x_pix + a22 * y_pix)
+
+def compute_sigmas(coefficients, star_df):
+    b1, a11, a12, b2, a21, a22 = coefficients
+    
+    x = star_df["x_pix"]
+    y = star_df["y_pix"]
+    ra_cat = star_df["ra_deg"]
+    dec_cat = star_df["dec_deg"]
+    
+    N = len(star_df)
+    
+    ra_fit = b1 + a11 * x + a12 * y
+    ra_diff = ra_fit - ra_cat
+    
+    dec_fit = b2 + a21 * x + a22 * y
+    dec_diff = dec_fit - dec_cat
+    
+    sigma_ra = np.sqrt(np.sum(ra_diff**2) / (N - 3))
+    sigma_dec = np.sqrt(np.sum(dec_diff**2) / (N - 3))
+    
+    return sigma_ra, sigma_dec

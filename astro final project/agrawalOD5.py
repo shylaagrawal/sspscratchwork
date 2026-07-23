@@ -49,7 +49,7 @@ def main():
         v2 = odlib.equatorial_to_ecliptic(v2)
 
         a, e, i, Omega, omega, M = odlib.orbital_elements(r2, v2)
-        M = odlib.propagate_M(M, a, t2, row["t_target_jd"])
+
 
         jpl_r2 = np.array([float(row["jpl_r2_x"]), float(row["jpl_r2_y"]), float(row["jpl_r2_z"])])
         jpl_v2 = np.array([ row["jpl_v2_x"], row["jpl_v2_y"],row["jpl_v2_z"]])
