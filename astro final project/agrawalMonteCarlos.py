@@ -35,9 +35,12 @@ def main():
     R1 = np.array([data["sun_x_1"].iloc[0], data["sun_y_1"].iloc[0], data["sun_z_1"].iloc[0]])
     R2 = np.array([data["sun_x_2"].iloc[0], data["sun_y_2"].iloc[0], data["sun_z_2"].iloc[0]])
     R3 = np.array([data["sun_x_3"].iloc[0], data["sun_y_3"].iloc[0], data["sun_z_3"].iloc[0]])
+    R1 = odlib.ecliptic_to_equatorial(R1)
+    R2 = odlib.ecliptic_to_equatorial(R2)
+    R3 = odlib.ecliptic_to_equatorial(R3)
 
     seed = 1982
-    N_samples = 10000
+    N_samples = 7000
     a, e, i, Om, om, M = [], [], [], [], [], []
 
     for _ in range(N_samples):
@@ -71,6 +74,9 @@ def main():
                 ra3_new, dec3_new,
                 R1, R2, R3
             )
+
+            r2 = odlib.equatorial_to_ecliptic(r2)
+            v2 = odlib.equatorial_to_ecliptic(v2)
 
             a_val, e_val, i_val, Om_val, om_val, M_val = odlib.orbital_elements(r2, v2)
 

@@ -54,12 +54,6 @@ def main():
         jpl_r2 = np.array([float(row["jpl_r2_x"]), float(row["jpl_r2_y"]), float(row["jpl_r2_z"])])
         jpl_v2 = np.array([ row["jpl_v2_x"], row["jpl_v2_y"],row["jpl_v2_z"]])
 
-        print("\nVector Error")
-        print("Position error:", np.linalg.norm(r2 - jpl_r2), "AU")
-        print("Velocity error:", np.linalg.norm(v2 - jpl_v2), "AU/day")
-        print("Position error:", np.linalg.norm((r2 - jpl_r2 )/ jpl_r2) * 100, "%")
-        print("Velocity error:", np.linalg.norm((v2 - jpl_v2 )/ jpl_v2) * 100, "%")
-
         print("\nOrbital Element Error")
         jpl_a = row["jpl_a"]
         jpl_e = row["jpl_e"]

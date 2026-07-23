@@ -66,13 +66,13 @@ def radec_to_decimal_to_rhohat(ra_str, dec_str):
 
 def radec_to_decimal(ra_str, dec_str):
     h, m, s = map(float, str(ra_str).strip().split())
-    ra = np.radians(hms_to_deg(h, m, s))
+    ra = hms_to_deg(h, m, s)
 
     dec_str = str(dec_str).strip()
     sign = -1.0 if dec_str.startswith('-') else 1.0
     parts = dec_str.lstrip('+-').split()
     d, m, s = map(float, parts)
-    dec = np.radians(sign * (d + m / 60.0 + s / 3600.0))
+    dec = sign * (d + m / 60.0 + s / 3600.0)
 
     return ra, dec
 
